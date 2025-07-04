@@ -1,4 +1,4 @@
-package taks1
+package main
 
 import (
 	"fmt"
