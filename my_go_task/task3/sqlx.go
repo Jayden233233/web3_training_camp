@@ -20,7 +20,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Employee 结构体对应 employees 表
+// Employee 结构体映射employees表
 type Employee struct {
 	ID         int    `db:"id"`
 	Name       string `db:"name"`
@@ -28,7 +28,7 @@ type Employee struct {
 	Salary     int    `db:"salary"`
 }
 
-// Book 结构体对应 books 表
+// Book 结构体映射books表
 type Book struct {
 	ID     int     `db:"id"`
 	Title  string  `db:"title"`
@@ -37,21 +37,27 @@ type Book struct {
 }
 
 func main() {
-	// 连接到SQLite内存数据库
-	db, err := sqlx.Connect("sqlite3", ":memory:")
+	// 连接SQLite内存数据库（无需文件）
+	db, err := sqlx.Connect("sqlite3", "file::memory:?cache=shared")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("连接数据库失败: %v", err)
 	}
 	defer db.Close()
 
-	// 创建测试表
-	createTables(db)
-	seedData(db)
+	// 创建表
+	if err := createTables(db); err != nil {
+		log.Fatalf("创建表失败: %v", err)
+	}
+
+	// 插入测试数据
+	if err := seedData(db); err != nil {
+		log.Fatalf("插入数据失败: %v", err)
+	}
 
 	// 题目1-1：查询技术部员工
 	techEmployees, err := getEmployeesByDepartment(db, "技术部")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("查询技术部员工失败: %v", err)
 	}
 	fmt.Println("技术部员工:")
 	for _, emp := range techEmployees {
@@ -61,14 +67,14 @@ func main() {
 	// 题目1-2：查询工资最高的员工
 	topEmployee, err := getHighestSalaryEmployee(db)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("查询最高工资员工失败: %v", err)
 	}
 	fmt.Printf("\n工资最高的员工: %s (工资: %d)\n", topEmployee.Name, topEmployee.Salary)
 
 	// 题目2：查询价格大于50的书籍
 	expensiveBooks, err := getBooksOverPrice(db, 50.0)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("查询高价书籍失败: %v", err)
 	}
 	fmt.Println("\n价格大于50的书籍:")
 	for _, book := range expensiveBooks {
@@ -77,7 +83,7 @@ func main() {
 }
 
 // 创建测试表
-func createTables(db *sqlx.DB) {
+func createTables(db *sqlx.DB) error {
 	_, err := db.Exec(`
 		CREATE TABLE employees (
 			id INTEGER PRIMARY KEY,
@@ -93,13 +99,11 @@ func createTables(db *sqlx.DB) {
 			price REAL
 		);
 	`)
-	if err != nil {
-		log.Fatal(err)
-	}
+	return err
 }
 
 // 插入测试数据
-func seedData(db *sqlx.DB) {
+func seedData(db *sqlx.DB) error {
 	// 插入员工数据
 	employees := []struct {
 		Name       string
@@ -116,7 +120,7 @@ func seedData(db *sqlx.DB) {
 		_, err := db.Exec("INSERT INTO employees (name, department, salary) VALUES (?, ?, ?)",
 			emp.Name, emp.Department, emp.Salary)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
@@ -136,14 +140,16 @@ func seedData(db *sqlx.DB) {
 		_, err := db.Exec("INSERT INTO books (title, author, price) VALUES (?, ?, ?)",
 			book.Title, book.Author, book.Price)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
+
+	return nil
 }
 
 // 题目1-1：查询指定部门的员工
 func getEmployeesByDepartment(db *sqlx.DB, department string) ([]Employee, error) {
-	employees := []Employee{}
+	var employees []Employee
 	err := db.Select(&employees, "SELECT * FROM employees WHERE department = ?", department)
 	return employees, err
 }
@@ -157,7 +163,7 @@ func getHighestSalaryEmployee(db *sqlx.DB) (Employee, error) {
 
 // 题目2：查询价格大于指定值的书籍
 func getBooksOverPrice(db *sqlx.DB, price float64) ([]Book, error) {
-	books := []Book{}
+	var books []Book
 	err := db.Select(&books, "SELECT * FROM books WHERE price > ?", price)
 	return books, err
 }
