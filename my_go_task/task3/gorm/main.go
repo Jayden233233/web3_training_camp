@@ -9,7 +9,7 @@ import (
 
 func main() {
 	// 连接到SQLite内存数据库
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("local.db"), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("连接数据库失败: %v", err)
 	}
@@ -20,7 +20,8 @@ func main() {
 	}
 
 	// 创建测试数据
-	createTestData(db)
+	//已经保存在sqlite3的local.db中
+	// createTestData(db)
 
 	// 执行查询示例
 	queryUserPostsWithComments(db, 1)
