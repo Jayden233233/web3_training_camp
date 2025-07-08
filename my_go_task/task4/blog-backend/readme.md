@@ -1,3 +1,6 @@
+## 1. 项目结构
+
+```
 /blog-backend/
 ├── config/
 │   └── config.go
@@ -16,7 +19,10 @@
 ├── utils/
 │   ├── jwt.go
 │   └── response.go
+├── go.mod
+├── go.sum
 └── main.go
+```
 
 ## 8. 环境变量
 
